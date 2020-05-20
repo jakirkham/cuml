@@ -28,7 +28,6 @@ def serialize_mat_descriptor(m):
 
 try:
     from distributed.protocol import dask_deserialize, dask_serialize
-    from distributed.protocol.serialize import pickle_dumps, pickle_loads
     from distributed.protocol.cuda import cuda_deserialize, cuda_serialize
 
     from distributed.protocol import register_generic
@@ -37,28 +36,6 @@ try:
     from cuml.ensemble import RandomForestClassifier
 
     from cuml.naive_bayes import MultinomialNB
-
-    # Registering RF Regressor and Classifier to use pickling even when
-    # Base is serialized with Dask or CUDA serializations
-    @dask_serialize.register(RandomForestRegressor)
-    @cuda_serialize.register(RandomForestRegressor)
-    def rfr_serialize(rf):
-        return pickle_dumps(rf)
-
-    @dask_deserialize.register(RandomForestRegressor)
-    @cuda_deserialize.register(RandomForestRegressor)
-    def rfr_deserialize(header, frames):
-        return pickle_loads(header, frames)
-
-    @dask_serialize.register(RandomForestClassifier)
-    @cuda_serialize.register(RandomForestClassifier)
-    def rfc_serialize(rf):
-        return pickle_dumps(rf)
-
-    @dask_deserialize.register(RandomForestClassifier)
-    @cuda_deserialize.register(RandomForestClassifier)
-    def rfc_deserialize(header, frames):
-        return pickle_loads(header, frames)
 
     register_generic(cuml.Base, 'cuda',
                      cuda_serialize, cuda_deserialize)
@@ -70,6 +47,18 @@ try:
                      cuda_serialize, cuda_deserialize)
 
     register_generic(MultinomialNB, 'dask',
+                     dask_serialize, dask_deserialize)
+
+    register_generic(RandomForestRegressor, 'cuda',
+                     cuda_serialize, cuda_deserialize)
+
+    register_generic(RandomForestRegressor, 'dask',
+                     dask_serialize, dask_deserialize)
+
+    register_generic(RandomForestClassifier, 'cuda',
+                     cuda_serialize, cuda_deserialize)
+
+    register_generic(RandomForestClassifier, 'dask',
                      dask_serialize, dask_deserialize)
 
     copyreg.pickle(cp.cusparse.MatDescriptor, serialize_mat_descriptor)
