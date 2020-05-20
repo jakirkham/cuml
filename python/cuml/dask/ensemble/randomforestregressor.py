@@ -14,6 +14,10 @@
 # limitations under the License.
 #
 
+import pickle
+
+from cudf.core.abc import Serializable
+
 from cuml.dask.common.base import DelayedPredictionMixin
 from cuml.ensemble import RandomForestRegressor as cuRFR
 from cuml.dask.ensemble.base import \
@@ -24,7 +28,7 @@ import cuml.common.logger as logger
 
 
 class RandomForestRegressor(BaseRandomForestModel, DelayedPredictionMixin,
-                            BaseEstimator):
+                            BaseEstimator, Serializable):
     """
     Experimental API implementing a multi-GPU Random Forest classifier
     model which fits multiple decision tree classifiers in an
@@ -320,3 +324,23 @@ class RandomForestRegressor(BaseRandomForestModel, DelayedPredictionMixin,
         params : dict of new params
         """
         return self._set_params(**params)
+
+    def serialize(self):
+        """
+        Serialize the model for transmission
+        """
+        header = {}
+        frames = [pickle.dumps(self)]
+        return header, frames
+
+    @classmethod
+    def deserialize(self, header, frames):
+        """
+        Deserializes the model after transmission
+
+        Parameters
+        -----------
+        header : dict of metadata
+        frames : binary blobs of data
+        """
+        return pickle.loads(frames[0])

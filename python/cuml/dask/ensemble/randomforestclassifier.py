@@ -14,7 +14,11 @@
 # limitations under the License.
 #
 
+import pickle
+
 import numpy as np
+
+from cudf.core.abc import Serializable
 
 from cuml.dask.common.base import BaseEstimator
 from cuml.ensemble import RandomForestClassifier as cuRFC
@@ -29,7 +33,8 @@ import cuml.common.logger as logger
 
 
 class RandomForestClassifier(BaseRandomForestModel, DelayedPredictionMixin,
-                             DelayedPredictionProbaMixin, BaseEstimator):
+                             DelayedPredictionProbaMixin, BaseEstimator,
+                             Serializable):
 
     """
     Experimental API implementing a multi-GPU Random Forest classifier
@@ -442,3 +447,23 @@ class RandomForestClassifier(BaseRandomForestModel, DelayedPredictionMixin,
         params : dict of new params.
         """
         return self._set_params(**params)
+
+    def serialize(self):
+        """
+        Serialize the model for transmission
+        """
+        header = {}
+        frames = [pickle.dumps(self)]
+        return header, frames
+
+    @classmethod
+    def deserialize(self, header, frames):
+        """
+        Deserializes the model after transmission
+
+        Parameters
+        -----------
+        header : dict of metadata
+        frames : binary blobs of data
+        """
+        return pickle.loads(frames[0])
